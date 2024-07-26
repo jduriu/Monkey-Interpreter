@@ -6,39 +6,7 @@ import (
 	"testing"
 )
 
-func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 10;
-let foobar = 838383;
-	`
-
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
-	if program == nil {
-		t.Fatalf("ParseProgram() return nil")
-	}
-	checkStatementsLength(t, program.Statements)
-
-	tests := []struct {
-		expectedIdentifier string
-	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
-	}
-
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
-			return
-		}
-	}
-}
-
+// HELPER FUNCTIONS
 func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
 	if len(errors) == 0 {
@@ -73,6 +41,46 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	return true
 }
 
+func checkStatementsLength(t *testing.T, statements []ast.Statement, length int) {
+	if len(statements) != length {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d", length, len(statements))
+	}
+}
+
+// TEST FUNCTIONS
+func TestLetStatements(t *testing.T) {
+	input := `
+let x = 5;
+let y = 10;
+let foobar = 838383;
+	`
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if program == nil {
+		t.Fatalf("ParseProgram() return nil")
+	}
+	checkStatementsLength(t, program.Statements, 3)
+
+	tests := []struct {
+		expectedIdentifier string
+	}{
+		{"x"},
+		{"y"},
+		{"foobar"},
+	}
+
+	for i, tt := range tests {
+		stmt := program.Statements[i]
+		if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+			return
+		}
+	}
+}
+
 func TestReturnStatements(t *testing.T) {
 	input := `
 return 5;
@@ -85,7 +93,7 @@ return 993322;
 
 	program := p.ParseProgram()
 	checkParserErrors(t, p)
-	checkStatementsLength(t, program.Statements)
+	checkStatementsLength(t, program.Statements, 3)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -99,8 +107,29 @@ return 993322;
 	}
 }
 
-func checkStatementsLength(t *testing.T, statements []ast.Statement) {
-	if len(statements) != 3 {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(statements))
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	checkStatementsLength(t, program.Statements, 1)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("exp not *ast.Identifier. got=%T", stmt.Expression)
+	}
+	if ident.Value != "foobar" {
+		t.Errorf("ident.Value not %s. got=%s", "foobar", ident.Value)
+	}
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar", ident.TokenLiteral())
 	}
 }
