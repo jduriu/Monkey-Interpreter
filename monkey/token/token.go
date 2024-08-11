@@ -24,7 +24,7 @@ const (
 	SLASH    = "/"
 
 	LT = "<"
-	RT = ">"
+	GT = ">"
 
 	// Double Operators
 	EQ     = "=="
